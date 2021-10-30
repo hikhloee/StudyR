@@ -1,0 +1,159 @@
+---
+title: "__LabSeminar_R__"
+date: "`r format(Sys.Date())`" 
+author: "kyung hee Kim"
+output:
+  html_document:
+    fig_height: 6
+    fig_width: 10
+    highlight: textmate
+    theme: cosmo
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    fig_height: 6
+    fig_width: 10
+    toc: no
+  word_document:
+    fig_height: 6
+    fig_width: 9
+    toc: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### __Advance R Programming__
+
+> Chunk is self-contained.  
+insert chunk: ctrl+alt+l  
+run: ctrl+shift+enter  
+setup chunk: Starts at the beginning.  
+Showing table: knitr::kable  
+insert code inline: ex. `r x<-1`
+
+```{r}
+mtcars[1:5, ]
+
+knitr::kable(
+  mtcars[1:5, ], 
+  caption = "A knitr kable."
+)
+```
+There is difference. 
+
+---
+
+### __Class__
+
+```{r class}
+x<-matrix(1:9,3)
+rowSums(x);rowMeans(x) 
+
+#tidy data
+library(tidyverse,dplyr)
+
+```
+faster than apply()
+
+#### Tidyverse 사용법
+<https://gomguard.tistory.com/229>  
+
+결측값 보간, 데이터 나누기, 합치기 모두 가능 
+  
+
+#### data.table package 사용
+data가 클 때 
+read.csv 대신 (reading string error 발생) -> data.table::fread() 사용
+
+### __Visualization__
+```{r}
+library(ggplot2) #better than plot
+ggplot(mpg, aes(x = displ, y = hwy)) +
+geom_point() +
+geom_smooth() +
+theme_minimal()
+
+```
+
+
+
+### __Simulation__
+1. Monte Carlo
+- 정의: 무작위 추출된 난수를 이용하여 원하는 함수의 값을 계산하기 위한 시뮬레이션 방법  
+- 용도 : 우리가 어떤 참값을 알고 있을 때 어떤 통계량이 그것을 정확하게 추정해내는지를 볼 때 쓴다.  
+- 참고: 마코프 체인 몬테 카를로 방법(Markov Chain Monte Carlo Method, 약칭 MCMC)은 몬테 카를로 방법 중에서도 특정한 확률분포에 수렴하는 난수들을 추출하고 싶을 경우에 사용하는 방법이다. 
+```{r}
+# MC setting-------------------------
+num_mc <- 2
+num_iter <- 1000
+set.seed(1)
+# X1, X2 ~ N(0, 1)-------------------
+data_mc <-
+rnorm(num_mc * num_iter) %>%
+matrix(ncol = 2, byrow = TRUE)
+# theta = abs(data[,1] - data[,2])---
+emp_theta <- abs(data_mc[,1] - data_mc[,2])
+
+qplot(emp_theta, geom = "histogram", bins = 30) +
+theme_minimal() +
+xlab(expression(theta))
+```
+
+2. Bootstrap
+- 정의:  표본에서 재표본 추출을 통해 관심 있는 대상의 분포를 파악하는 방법
+- 용도: 주어진 표본에서 다시 표본을 뽑아 표본 자체를 늘리는 것으로 시작  
+```{r}
+set.seed(1)
+resample <- function(x) {
+n <- length(x)
+# sampling with replacement---------------
+x[sample(1:n, size = n, replace = TRUE)] %>%
+# estimator-----------------------------
+mean()
+}
+# example data------------------------------
+unif_sample <- runif(50, max = 50)
+resample_for <- function(x, B = 1000) {
+res <- numeric(B)
+for (b in 1:B) {
+res[b] <- resample(x = x)
+}
+res
+}
+qplot(resample_for(unif_sample), geom = "histogram", bins = 30) +
+theme_minimal() +
+xlab(expression(theta))
+```
+
+-------
+
+### __Style Guide__
+<https://style.tidyverse.org/>
+<https://www.tidyverse.org/blog/2017/12/workflow-vs-script/>
+```{r style_guide}
+library(styler)
+library(lintr)
+```
+
+
+### __Parallel Computation__
+
+1. PSOCK
+- windows
+- 단점: copy한다 : each socket이 각자 구동된다.
+2. FORK
+- mac, linux, etc
+- 장점: implementing이 쉽다, 속도가 빠르다.
+- mclapply, pvec: only FORK
+
+```{r parallel}
+library(foreach) # both psock and fork
+require(parallel) #parLapply, parSapply, ...
+
+
+```
+
+foreach 부터 다시보기 
